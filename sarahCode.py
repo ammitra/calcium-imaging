@@ -6,7 +6,7 @@ from tkinter import filedialog
 class analyzer:
     def __init__(self, fname):
         self.filename = fname
-        self.df = pd.read_csv(fname)
+        self.df = self.formatCSV(fname)
         self.values = {
             '# Detected particles' : {'row':None,'val':None},
             '# Detection stddev'   : {'row':None,'val':None},
@@ -26,9 +26,16 @@ class analyzer:
         }
         self.massKg = None
 
+    def formatCSV(self,fname):
+        '''Standardizes the input CSV so that all files are compatible'''
+        f = open(fname,'r')
+        lines = [l.strip() + ','*(3-l.count(',')) for l in f.readlines()]
+        df = pd.DataFrame(l.split(',') for l in lines)
+        return df
+
     def getValues(self):
         for name, info in self.values.items():
-            idx = self.df.index[self.df['# SPCal Export 0.8.2']==name].tolist()[0]
+            idx = self.df.index[self.df[0]==name][0]
             self.values[name]['row'] = idx
             val = self.df.iloc[idx,1]
             self.values[name]['val'] = val
@@ -52,8 +59,8 @@ class analyzer:
                 self.out['Mean (kg)'] = valkg
 
     def getMassKg(self):
-        start = self.df.index[self.df['Unnamed: 1'] == 'Mass (kg)'].tolist()[0]
-        self.massKg = self.df['Unnamed: 1'][start+1:-1]
+        start = self.df.index[self.df[1] == 'Mass (kg)'][0]
+        self.massKg = self.df[1][start+1:-1]
 
     # DEPRECATED
     def makeCSV(self):
@@ -64,6 +71,8 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.askdirectory()
+
+    print('File path is: {}'.format(file_path))
 
     files = []
     for f in glob.glob('{}/*.csv'.format(file_path)):
